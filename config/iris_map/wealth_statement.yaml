@@ -1,0 +1,61 @@
+# IRIS field map — wealth statement (assets/liabilities + reconciliation).
+#
+# Same rules as salaried.yaml: selectors live ONLY here; prefer role/label/text;
+# css/xpath need a `note`. Labels are PLACEHOLDERS pending an IRIS spike.
+#
+# assets[] and liabilities[] are repeating {code, description, amount} rows that
+# map to ADF tables; they need a row handler in the executor and are deferred.
+# The scalar reconciliation fields below are mapped now.
+
+return_type: wealth_statement
+description: >-
+  Wealth statement reconciliation: prior-year net assets, inflows, outflows,
+  and the IRIS-computed current net assets / reconciliation difference.
+
+fields:
+  - canonical: wealth.prior_year_net_assets
+    tab: Reconciliation of Net Assets
+    iris_field: Net assets previous year
+    code: "7019"
+    input_type: number
+    locator:
+      label: Net assets previous year
+      note: TODO confirm prior-year net assets field
+
+  - canonical: wealth.income_for_the_year
+    tab: Reconciliation of Net Assets
+    iris_field: Income / inflows for the year
+    code: "7029"
+    input_type: number
+    locator:
+      label: Income declared for the year
+      note: TODO confirm inflow/income line on reconciliation
+
+  - canonical: wealth.personal_expenses
+    tab: Personal Expenses
+    iris_field: Total personal expenses
+    code: "7089"
+    input_type: number
+    locator:
+      label: Personal expenses
+      note: TODO confirm personal-expenses total field
+
+  - canonical: wealth.net_assets_current
+    tab: Reconciliation of Net Assets
+    iris_field: Net assets current year
+    code: "7099"
+    input_type: readonly
+    note: IRIS computes this; assert it matches canonical net_assets_current
+    locator:
+      text: Net assets current year
+      note: TODO confirm readonly total selector for verification
+
+  - canonical: wealth.reconciliation_difference
+    tab: Reconciliation of Net Assets
+    iris_field: Unreconciled amount
+    code: "703000"
+    input_type: readonly
+    note: Must be zero before a human submits; assert against canonical value
+    locator:
+      text: Unreconciled amount
+      note: TODO confirm the unreconciled-amount display field

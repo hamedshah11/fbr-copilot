@@ -1,0 +1,53 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "fbr-copilot"
+version = "0.1.0"
+description = "FBR IRIS return-drafting agent — drafts and saves income-tax returns on IRIS. Never submits."
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2",
+    "fastapi",
+    "uvicorn[standard]",
+    "playwright",
+    "anthropic",
+    "supabase",
+    "pyyaml",
+    "python-dotenv",
+]
+
+[project.optional-dependencies]
+# Test/lint tooling. The heavy runtime deps (playwright/anthropic/supabase) are
+# imported lazily, so unit tests run with just this set + pydantic/fastapi/pyyaml.
+dev = [
+    "pytest>=8",
+    "pytest-asyncio",
+    "httpx",
+    "ruff",
+    "mypy",
+]
+
+[tool.hatch.build.targets.wheel]
+# Flat modules live under src/; map them to the wheel root, and ship the maps.
+only-include = ["src", "config"]
+sources = ["src"]
+
+[tool.pytest.ini_options]
+# src is the import root (schema, normalize, agent.*, ...); no install needed.
+pythonpath = ["src"]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true

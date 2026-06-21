@@ -1,0 +1,38 @@
+# --- secrets: never commit (CLAUDE.md hard rule #2) ---
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+secrets/
+credentials*.json
+
+# --- run artifacts that may contain taxpayer data ---
+audit*.jsonl
+*.audit.jsonl
+runs/
+screenshots/
+traces/
+*.trace.zip
+*.har
+
+# --- python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+build/
+dist/
+*.egg-info/
+
+# --- playwright ---
+playwright-report/
+test-results/
+
+# --- editor / os ---
+.DS_Store
+.idea/
+.vscode/

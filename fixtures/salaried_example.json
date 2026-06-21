@@ -1,0 +1,37 @@
+{
+  "tax_year": 2025,
+  "taxpayer_name": "Test Taxpayer",
+  "return_type": "salaried",
+  "salary": {
+    "employer_name": "Example Industries (Pvt) Ltd",
+    "pay": 2400000,
+    "allowances": 600000,
+    "exempt": 0
+  },
+  "other_income": {
+    "profit_on_debt": 50000
+  },
+  "taxes": {
+    "salary_tax_withheld": 350000,
+    "adjustable": [
+      {"code": "64100101", "description": "Tax on mobile phone bills u/s 236", "amount": 5000}
+    ],
+    "final": [
+      {"code": "64310056", "description": "Tax on profit on debt u/s 151", "amount": 7500}
+    ]
+  },
+  "wealth": {
+    "prior_year_net_assets": 8000000,
+    "assets": [
+      {"code": "7001", "description": "Residential house", "amount": 7000000},
+      {"code": "7002", "description": "Motor vehicle", "amount": 2500000},
+      {"code": "7003", "description": "Bank balance", "amount": 1200000},
+      {"code": "7004", "description": "Cash in hand", "amount": 300000}
+    ],
+    "liabilities": [
+      {"code": "7051", "description": "Vehicle loan", "amount": 1000000}
+    ],
+    "income_for_the_year": 3050000,
+    "personal_expenses": 1050000
+  }
+}

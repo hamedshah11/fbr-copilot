@@ -1,0 +1,75 @@
+# IRIS field map — salaried return (income side).
+#
+# This file is the durable IP: canonical TaxReturn fields -> IRIS tab/field/code.
+# Selectors live ONLY here. IRIS is Oracle ADF, so element ids are dynamic:
+# prefer role/label/text; css/xpath are last resort and must carry a `note`.
+#
+# Locator labels below are PLACEHOLDERS to be confirmed against the live IRIS
+# form during a spike (scripts/spike_*.py). Each `note` flags what to verify.
+# List-valued canonical fields (taxes.adjustable / taxes.final) need a repeating
+# row handler in the executor and are intentionally deferred (see notes).
+
+return_type: salaried
+description: >-
+  Income side of the salaried individual return: salary components, common
+  other income, and tax deducted at source.
+
+fields:
+  - canonical: salary.pay
+    tab: Salary
+    iris_field: Pay, Wages or other remuneration
+    code: "1009"
+    input_type: number
+    locator:
+      label: Pay, Wages or other remuneration
+      note: TODO confirm exact ADF label/section during spike
+
+  - canonical: salary.allowances
+    tab: Salary
+    iris_field: Allowances (taxable)
+    code: "1019"
+    input_type: number
+    locator:
+      label: Allowances
+      note: TODO confirm exact ADF label; exclude allowances under final tax
+
+  - canonical: salary.exempt
+    tab: Salary
+    iris_field: Salary exempt from tax
+    code: "1049"
+    input_type: number
+    locator:
+      label: Exempt
+      note: TODO confirm exempt-salary field location
+
+  - canonical: salary.taxable
+    tab: Salary
+    iris_field: Total taxable salary
+    code: "1000"
+    input_type: readonly
+    note: IRIS computes this; we assert it matches the canonical computed value
+    locator:
+      text: Total taxable salary
+      note: TODO confirm readonly total selector for verification
+
+  - canonical: other_income.profit_on_debt
+    tab: Other Sources
+    iris_field: Profit on debt
+    code: "5002"
+    input_type: number
+    locator:
+      label: Profit on debt
+      note: TODO confirm; profit on debt is often final tax, verify treatment
+
+  - canonical: taxes.salary_tax_withheld
+    tab: Tax Chargeable / Payments
+    iris_field: Tax deducted on salary u/s 149
+    code: "64020003"
+    input_type: number
+    locator:
+      label: Tax deducted on salary
+      note: TODO confirm adjustable-tax row for salary (u/s 149)
+
+  # taxes.adjustable and taxes.final are lists of {code, description, amount}.
+  # They map to repeating ADF rows and need a row handler in the executor;
+  # deferred to the execute phase. Do not inline selectors elsewhere.
