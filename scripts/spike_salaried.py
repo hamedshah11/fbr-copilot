@@ -245,21 +245,50 @@ async def smart_fill(
     return False
 
 
-def prompt_human_for_otp() -> str:
-    """Pause and ask the human for the OTP. Never guessed, never from SMS."""
-    if not sys.stdin.isatty():
-        raise SystemExit(
-            "OTP required but there is no interactive terminal here. Run this "
-            "script on your own computer and type the code from your phone."
-        )
+async def wait_for_otp_via_file(
+    otp_file: str, log: StepLogger, timeout_s: int = 300, poll_s: int = 2
+) -> str:
+    """Non-interactive OTP hand-off (e.g. a cloud session with no terminal):
+    pause and poll a file the human writes the code into. Never guessed.
+    """
+    p = Path(otp_file)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    if p.exists():
+        p.unlink()
     print("\n" + "=" * 56, file=sys.stderr)
     print("  IRIS is asking for a one-time code (OTP).", file=sys.stderr)
-    print("  Check your phone/email and type it below. Never shared.", file=sys.stderr)
-    print("=" * 56, file=sys.stderr)
-    return input("  Enter OTP: ").strip()
+    print(f"  Paused — write the code into:  {p}", file=sys.stderr)
+    print("=" * 56, file=sys.stderr, flush=True)
+    log.step("otp", "-", "waiting", f"polling {p} for a human-supplied code")
+    waited = 0
+    while waited < timeout_s:
+        if p.exists():
+            code = p.read_text(encoding="utf-8").strip()
+            if code:
+                p.unlink()
+                return code
+        await asyncio.sleep(poll_s)
+        waited += poll_s
+    raise SystemExit(f"timed out after {timeout_s}s waiting for OTP in {p}")
 
 
-async def handle_otp(page: Page, log: StepLogger, dry_run: bool) -> None:
+async def obtain_otp(log: StepLogger, otp_file: str | None) -> str:
+    """Get the OTP from the human. Never guessed, never read from SMS."""
+    if otp_file:
+        return await wait_for_otp_via_file(otp_file, log)
+    if sys.stdin.isatty():
+        print("\n" + "=" * 56, file=sys.stderr)
+        print("  IRIS is asking for a one-time code (OTP).", file=sys.stderr)
+        print("  Check your phone/email and type it below. Never shared.", file=sys.stderr)
+        print("=" * 56, file=sys.stderr)
+        return input("  Enter OTP: ").strip()
+    raise SystemExit(
+        "OTP required but no interactive terminal. Re-run with --otp-file PATH so "
+        "the code can be supplied out-of-band (e.g. from a cloud session)."
+    )
+
+
+async def handle_otp(page: Page, log: StepLogger, dry_run: bool, otp_file: str | None) -> None:
     if dry_run:
         log.step("otp", "-", "skipped", "dry-run")
         return
@@ -269,13 +298,13 @@ async def handle_otp(page: Page, log: StepLogger, dry_run: bool) -> None:
     except PWTimeout:
         log.step("otp", "-", "not-required")
         return
-    code = prompt_human_for_otp()
+    code = await obtain_otp(log, otp_file)
     await otp_field.fill(code)
     await page.get_by_role("button", name="Verify").click()
     log.step("otp", "label 'verification code'", "ok", "entered by human")
 
 
-async def login(page: Page, log: StepLogger, base_url: str, dry_run: bool) -> None:
+async def login(page: Page, log: StepLogger, base_url: str, dry_run: bool, otp_file: str | None) -> None:
     cnic = os.environ.get("IRIS_CNIC")
     pwd = os.environ.get("IRIS_PASSWORD")
     if not dry_run and (not cnic or not pwd):
@@ -287,7 +316,7 @@ async def login(page: Page, log: StepLogger, base_url: str, dry_run: bool) -> No
     await page.get_by_role("button", name="Login").click()
     log.step("login", "label 'Registration No' + 'Password'", "ok",
              "credentials from .env; never logged")
-    await handle_otp(page, log, dry_run)
+    await handle_otp(page, log, dry_run, otp_file)
 
 
 async def open_return(page: Page, log: StepLogger, tax_year: int) -> None:
@@ -354,7 +383,7 @@ async def run(args: argparse.Namespace) -> int:
         page = await context.new_page()
         page.set_default_timeout(timeout_ms)
         try:
-            await login(page, log, base_url, args.dry_run)
+            await login(page, log, base_url, args.dry_run, args.otp_file)
             if not args.dry_run:
                 await open_return(page, log, args.tax_year)
             filled = 0
@@ -380,6 +409,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     ap.add_argument("--headless", action="store_true", help="run headless (default: headed, for watching)")
     ap.add_argument("--slow-mo", type=int, default=0, help="ms delay between actions when watching")
     ap.add_argument("--tax-year", type=int, default=2025)
+    ap.add_argument("--otp-file", default=None,
+                    help="poll this file for the OTP (non-interactive / cloud) instead of prompting stdin")
     ap.add_argument("--out-map", default=str(DEFAULT_MAP), help="where to write the recorded draft field map")
     ap.add_argument("--notes", default=str(DEFAULT_NOTES), help="where to append the step log")
     ap.add_argument("--trace-out", default=None, help="trace zip path (default: traces/spike_salaried_<ts>.zip)")
